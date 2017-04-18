@@ -1,8 +1,8 @@
 #require "Rocky.class.nut:1.3.0"
 #require "PrettyPrinter.class.nut:1.0.1"
 
-#include "conctr.agent.nut"
-#include "htmlString.html"
+#include "libs/conctr.agent.nut"
+#include "include/configPage.html"
 
 const DEFAULT_POLLFREQ1 = 172800;
 const DEFAULT_POLLFREQ2 = 86400
@@ -12,13 +12,8 @@ const DEFAULT_POLLFREQ5 = 900;
 
 // Conctr Dev
 const APP_ID = "376f9f5f751e4cd2b7e3fb02d7a1fb90";
-const API_KEY = "2256ca50-769b-4d2f-9fbc-f6c1bb2175e6";
+const API_KEY = "e1871d42-6580-41a6-a13d-8086df8cfb35";
 const MODEL = "environment_sensor:v1";
-// Staging
-// const APP_ID = "012d0ce53bee4f048568810a80419d7e";
-// const API_KEY = "cbc86c10-087d-4fe5-94e7-90182f1fc26f";
-// const MODEL = "environment_sensor:v1";
-
 
 class environmentSensor {
 	savedData = {};

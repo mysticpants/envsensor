@@ -1,20 +1,194 @@
-// Import Libraries
+
 #require "WS2812.class.nut:2.0.2"
 #require "HTS221.class.nut:1.0.0"
 #require "LPS22HB.class.nut:1.0.0"
 #require "LIS3DH.class.nut:1.3.0"
-//#require "conctr.device.class.nut:1.0.0"
 
-//Debugging
+
+
 #require "JSONEncoder.class.nut:1.0.0"
 #require "PrettyPrinter.class.nut:1.0.1"
 
 
 
-#include "libs/conctr.device.nut"
 
 
-// Constants
+
+
+
+
+class Conctr {
+
+    static VERSION = "1.2.0";
+
+
+    
+    static DATA_EVENT = "conctr_data";
+    static LOCATION_REQ = "conctr_get_location";
+    static AGENT_OPTS = "conctr_agent_options";
+    static SOURCE_DEVICE = "impdevice";
+
+    
+    static DEFAULT_LOC_INTERVAL = 3600;
+
+
+    
+    _locationRecording = true;
+    _locationSent = false;
+    _locationTimeout = 0;
+    _sendLocInterval = 0;
+    _sendLocOnce = false;
+
+    _DEBUG = false;
+
+    
+    _onResponse = null;
+
+    
+    constructor(opts = {}) {
+
+        _onResponse = {};
+
+        
+        setOpts(opts);
+
+        agent.on(DATA_EVENT, _doResponse.bindenv(this));
+        agent.on(LOCATION_REQ, _handleLocReq.bindenv(this));
+    }
+
+
+    
+    function setOpts(opts = {}) {
+
+        _sendLocInterval = ("sendLocInterval" in opts && opts.sendLocInterval != null) ? opts.sendLocInterval : DEFAULT_LOC_INTERVAL;
+        _sendLocOnce = ("sendLocOnce" in opts && opts.sendLocOnce != null) ? opts.sendLocOnce : false;
+
+        _locationRecording = ("sendLoc" in opts && opts.sendLoc != null) ? opts.sendLoc : _locationRecording;
+        _locationTimeout = 0;
+        _locationSent = false;
+
+        if (_DEBUG) {
+            server.log("Conctr: setting agent options from device");
+        }
+        setAgentOpts(opts);
+    }
+
+
+    
+    function setAgentOpts(opts) {
+
+        agent.send(AGENT_OPTS, opts);
+
+    }
+
+
+    
+    function sendData(payload, callback = null) {
+
+        local locationAdded = false;
+
+        
+        if (typeof payload == "table") {
+            payload = [payload];
+        }
+
+        if (typeof payload == "array") {
+
+            foreach (k, v in payload) {
+                
+                if (!("_ts" in v) || (v._ts == null)) {
+                    v._ts <- time();
+                }
+
+                
+                v._id <- format("%d:%d", hardware.millis(), hardware.micros());
+                v._source <- SOURCE_DEVICE;
+
+                
+                if (!("_location" in v) && _shouldSendLocation() && !locationAdded) {
+
+                    local wifis = imp.scanwifinetworks();
+                    if (wifis != null) {
+                        v._location <- wifis;
+                        locationAdded = true;
+                    }
+                }
+
+                
+                if (callback) _onResponse[v._id] <- callback;
+
+
+                if (_DEBUG) {
+                    server.log("Conctr: Sending data to agent");
+                }
+            }
+
+            agent.send("conctr_data", payload);
+
+        } else {
+            
+            throw "Conctr: Payload must contain a table or an array of tables";
+        }
+
+    }
+
+    
+    function send(unusedKey, payload = null, callback = null) {
+        sendData(payload, callback);
+    }
+
+    
+    function _doResponse(response) {
+        foreach (id in response.ids) {
+            if (id in _onResponse) {
+                _onResponse[id](response.error, response.body);
+            }
+        }
+    }
+
+
+    
+    function _handleLocReq(arg) {
+
+        if (_DEBUG) {
+            server.log("Conctr: recieved a location request from agent");
+        }
+
+        sendData({});
+    }
+
+
+
+    
+    function _shouldSendLocation() {
+
+        if (!_locationRecording) {
+
+            
+            return false;
+
+        } else {
+
+            
+            local now = (hardware.millis() / 1000);
+            if ((_locationSent == false) || ((_sendLocOnce == false) && (_locationTimeout - now < 0))) {
+
+                
+                _locationTimeout = now + _sendLocInterval;
+                _locationSent = true;
+                return true;
+
+            } else {
+                
+                return false;
+
+            }
+        }
+    }
+}
+
+
+
 const LPS22HB_ADDR = 0xB8;
 const LIS3DH_ADDR = 0x32;
 const POLL_TIME = 900; 
@@ -69,14 +243,14 @@ class environmentSensor {
         if (remoteConfig.tapEnabled == "true") {
             accel.configureClickInterrupt(false, LIS3DH.DOUBLE_CLICK, remoteConfig.tapSensitivity, 15, 10, 300);
         } else {
-            // TODO: DISABLE interrupt
-            //accel.configureClickInterrupt(true, LIS3DH.DOUBLE_CLICK, remoteConfig.tapSensitivity, 15, 10, 300); 
+            
+            
         }
         
         poll();
     }
 
-    // Define a function to poll the pin every 0.1 seconds
+    
     function poll() {        
         if (pollRunning) return;
         pollRunning = true;
@@ -96,7 +270,7 @@ class environmentSensor {
                 server.log("temphumiderror");
                 server.error("An Error Occurred: " + result.error);
             } else {
-                // This temp sensor has 0.5 accuracy so it is used for 0-40 degrees.
+                
                 currentReadings.temperature = result.temperature; 
                 currentReadings.humidity = result.humidity;
                 server.log(format("Current Humidity: %0.2f %s, Current Temperature: %0.2f °C", result.humidity, "%", result.temperature));
@@ -109,9 +283,9 @@ class environmentSensor {
             if ("err" in result) {
                 server.error("An Error Occurred: " + result.err);
             } else {
-                // Note the temp sensor in the LPS22HB is only accurate to +-1.5 degrees. 
-                // But it has an range of up to 65 degrees.
-                // Hence it is used if temp is greater than 40.
+                
+                
+                
                 if (result.temperature > 40) currentReadings.temperature = result.temperature; 
                 currentReadings.pressure = result.pressure;
                 server.log(format("Current Pressure: %0.2f hPa, Current Temperature: %0.2f °C", result.pressure, result.temperature));
@@ -128,17 +302,17 @@ class environmentSensor {
         sleepTime = calcSleepTime(currentReadings.battery);         
        
         if (1) {
-            //localConfig.ledBlueEnabled
+            
             ledgreen.write(0); 
             ledblue.write(0); 
-            // Debugging 
+            
             hardware.pin1.configure(DIGITAL_OUT, 1);
             led.set(0, [0,255,255]).draw();
 
             imp.wakeup(1.0, function(){
                 ledgreen.write(1); 
                 ledblue.write(1); 
-                // Debugging
+                
                 hardware.pin1.configure(DIGITAL_OUT, 0);
 
                 decrementProcesses();
@@ -180,24 +354,24 @@ class environmentSensor {
     function calcSleepTime(battVoltage) {
         local sleepTime;
         if (battVoltage < 0.8) {
-            // Poll only once every two days
+            
             sleepTime = localConfig.pollFreq1; 
             server.log("Battery Voltage Critical: " + battVoltage);
         } else if (battVoltage < 1.5) {
-            // Poll only once every day
+            
             sleepTime = localConfig.pollFreq2;
             server.log("Battery Voltage Low: " + battVoltage);
         } else if (battVoltage < 2.0) {
-            // Poll only once every 5 hours
+            
             sleepTime = localConfig.pollFreq3;        
             server.log("Battery Voltage Medium: " + battVoltage);
         } else if (battVoltage < 2.5) {
-             // Poll only once an hour
+             
             sleepTime = localConfig.pollFreq4;
             server.log("Battery Voltage High: " + battVoltage);
         } else {
             server.log("Battery Voltage Full: " + battVoltage);
-            // Poll every 15 min
+            
             sleepTime = localConfig.pollFreq5;
         }
 
@@ -205,13 +379,13 @@ class environmentSensor {
             sleepTime = sleepTime.tointeger();
         }
 
-        // Min sleepTime of 10s, make sure we can't brick it.
+        
         if (sleepTime < 10) sleepTime = 10;
 
         return sleepTime;
     }
 
-    // function that returns an average of an array
+    
     function takeAverage (array) {
         local sum = 0;
         local average = 0
@@ -224,7 +398,7 @@ class environmentSensor {
 
 }
 
-// Globals
+
 batt <- hardware.pin2;
 batt.configure(ANALOG_IN);
 wakepin <- hardware.pin1;
@@ -246,7 +420,7 @@ tempHumid.setMode(HTS221_MODE.ONE_SHOT, 7);
 conctr <- Conctr();
 envSensor <- environmentSensor();
 
-// DEBUGGING
+
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
 spi <- hardware.spi257;
