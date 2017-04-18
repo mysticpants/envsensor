@@ -3,6 +3,7 @@
 
 #include "libs/conctr.agent.nut"
 #include "include/configPage.html"
+#include "include/conctr_api_key.nut"
 
 const DEFAULT_POLLFREQ1 = 172800;
 const DEFAULT_POLLFREQ2 = 86400
