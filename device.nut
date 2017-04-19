@@ -68,15 +68,22 @@ class environmentSensor {
         agent.on("config", setConfig.bindenv(this));
     }
 
-
+    // function that requests agent for configs
+    // 
+    // @params none
+    // @returns none
     // 
     function init() {
         agent.send("ready", "ready");
     }
 
-
+    // function that sets the configs
+    //  
+    // @param  newconfig - object containing the new configurations
+    // @returns none
     // 
     function setConfig(newconfig) {
+        server.log("Setting Configs");
         if (typeof newconfig == "table") {
 
             foreach (k, v in newconfig) {
@@ -92,8 +99,11 @@ class environmentSensor {
         poll();
     }
 
-
-    // Define a function to poll the pin every 0.1 seconds
+    // function that takes the sensor readings
+    // 
+    // @param     none
+    // @returns   none
+    // 
     function poll() {
 
         if (_pollRunning) return;
@@ -143,7 +153,7 @@ class environmentSensor {
             decrementProcesses();
         }.bindenv(this));
 
-        // Read the lught level
+        // Read the light level
         reading.light = hardware.lightlevel();
         server.log("Ambient Light: " + reading.light);
 
@@ -170,7 +180,7 @@ class environmentSensor {
 
         _processesRunning++;
         imp.wakeup(1.0, function() {
-
+            // TODO: Implement changing LED blink duration.
             if (deviceType == DeviceType.environmentSensor) {
                 ledgreen.write(1);
                 ledblue.write(1);
@@ -185,7 +195,10 @@ class environmentSensor {
 
     }
 
-
+    // function that posts the readings
+    // 
+    // @param     none
+    // @returns   none
     // 
     function postReadings() {
         agent.send("reading", reading);
@@ -195,6 +208,10 @@ class environmentSensor {
     }
 
 
+    // function that reads the battery voltage
+    // 
+    // @param     none
+    // @returns   battVoltage - the detected battery voltage
     // 
     function getBattVoltage() {
         local firstRead = batt.read() / 65535.0 * hardware.voltage();
@@ -210,12 +227,16 @@ class environmentSensor {
         }
     }
 
-
+    // function posts readings if no more processes are running
+    // 
+    // @param     none
+    // @returns   none
     // 
     function decrementProcesses() {
         if (--_processesRunning <= 0) {
             if (cm.isConnected()) {
                 postReadings();
+                // TODO Handle not connected to wifi
             } else {
                 cm.onNextConnect(postReadings.bindenv(this)).connect();
             }
@@ -223,7 +244,10 @@ class environmentSensor {
         }
     }
 
-
+    // function that calculates sleep time
+    // 
+    // @param     battVoltage - the read battery voltage
+    // @returns    _sleeptime - duration for the imp to sleep
     // 
     function calcSleepTime(battVoltage) {
         local _sleepTime;
@@ -249,14 +273,15 @@ class environmentSensor {
             _sleepTime = config.pollFreq5;
         }
 
-        // Min _sleepTime of 10s, make sure we can't brick it.
-        if (_sleepTime < 10) _sleepTime = 10;
-
         return _sleepTime;
     }
 
 
     // function that returns an average of an array
+    // 
+    // @param     array - input array of numbers
+    // @returns average - average of array
+    // 
     function takeAverage(array) {
         local sum = 0;
         local average = 0
@@ -274,12 +299,14 @@ class environmentSensor {
 cm <- ConnectionManager({ "blinkupBehavior": ConnectionManager.BLINK_ALWAYS, "stayConnected": false });
 imp.setsendbuffersize(8096);
 
+// Checks hardware type
 if ("pinW" in hardware) {
     deviceType <- DeviceType.environmentSensor;
 } else {
     deviceType <- DeviceType.impExplorer;
 }
 
+// Configures the pins depending on device type
 if (deviceType == DeviceType.environmentSensor) {
     batt <- hardware.pinH;
     batt.configure(ANALOG_IN);
@@ -302,6 +329,7 @@ if (deviceType == DeviceType.environmentSensor) {
     rgbLED <- WS2812(spi, 1);
 }
 
+// Init Hardware
 accel <- LIS3DH(i2cpin, LIS3DH_ADDR);
 accel.setDataRate(100);
 accel.configureClickInterrupt(true, LIS3DH.DOUBLE_CLICK, 2, 15, 10, 300);
@@ -316,4 +344,18 @@ print <- pp.print.bindenv(pp);
 
 // Start the application
 envSensor <- environmentSensor();
-envSensor.init();
+bootdelay <- 0;
+
+// Delays code initalization after booting from power cycle, to allow for BlinkUps.
+if (hardware.wakereason() == WAKEREASON_POWER_ON) bootdelay <- 20
+imp.wakeup(bootdelay, function() {
+    imp.onidle(function(){
+        // Only does this if it's initially connected to wifi, so it only gets preferences on power cycle. 
+        envSensor.init();
+        envSensor.poll();
+    }.bindenv(this));
+}.bindenv(this));
+
+
+
+

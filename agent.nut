@@ -111,12 +111,15 @@ class environmentSensor {
         }
     }
 
-
-    // Send readings to Conctr
+    // function that sends data to Conctr
+    // 
+    // @param     reading - the sensor readings to be posted
+    // @returns    none - 
+    // 
     function postReading(reading) {
         conctr.sendData(reading, function(err, response) {
             if (err) {
-                server.error("Conctr sendData: " + err);
+                server.log("Conctr sendData: " + err);
             } else {
                 server.log("Conctr data sent: " + response.statusCode);
             }

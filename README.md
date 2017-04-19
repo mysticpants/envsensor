@@ -17,3 +17,4 @@ The green LED is on pinU.
 
 ### Config Page ###
 There is a user configuration page hosted by the agent.
+Currently, the device only retrieves new configurations on power cycle. The Imp Explorers need about 10 seconds unpowered for successful power cycling.
