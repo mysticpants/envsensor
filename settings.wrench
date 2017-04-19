@@ -3,7 +3,7 @@
 	"device_file_out":"device.nut.out",
 	"agent_file_in":"agent.nut",
 	"device_file_in":"device.nut",
-	"api_file":"build_api_key.json",
-	"model_key":"17lUSrky1NXy",
+	"api_file":".build_api_key.json",
+	"model_key":"zrTICm3Pa-_m",
 	"dirs":["libs"]
 }

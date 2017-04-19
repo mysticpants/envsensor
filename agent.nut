@@ -11,11 +11,6 @@ const DEFAULT_POLLFREQ3 = 18000;
 const DEFAULT_POLLFREQ4 = 3600;
 const DEFAULT_POLLFREQ5 = 900;
 
-// Conctr Dev
-const APP_ID = "376f9f5f751e4cd2b7e3fb02d7a1fb90";
-const API_KEY = "e1871d42-6580-41a6-a13d-8086df8cfb35";
-const MODEL = "environment_sensor:v1";
-
 class environmentSensor {
 	savedData = {};
 
@@ -69,7 +64,7 @@ class environmentSensor {
 api <- Rocky();
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
-conctr <- Conctr(APP_ID, API_KEY, MODEL,api, {"env": "dev"});
+conctr <- Conctr(APP_ID, API_KEY, MODEL,api);
 backup <- server.load();
 
 
