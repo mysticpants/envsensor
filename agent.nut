@@ -1,9 +1,14 @@
+// Copyright (c) 2017 Mystic Pants Pty Ltd
+// This file is licensed under the MIT License
+// http://opensource.org/licenses/MIT
+
 #require "Rocky.class.nut:1.3.0"
 #require "PrettyPrinter.class.nut:1.0.1"
 
 #include "libs/conctr.agent.nut"
 #include "include/configPage.html"
 #include "include/conctr_api_key.nut"
+#include "include/defaults.nut"
 
 const DEFAULT_POLLFREQ1 = 172800;
 const DEFAULT_POLLFREQ2 = 86400
@@ -12,48 +17,107 @@ const DEFAULT_POLLFREQ4 = 3600;
 const DEFAULT_POLLFREQ5 = 900;
 
 class environmentSensor {
-	savedData = {};
 
-	constructor() {
-		savedData = {"temperature": null,
-				 "humidity": null,
-				 "pressure": null,
-				 "battery": null,
-				 "acceleration_x": null,
-				 "acceleration_y": null,
-				 "acceleration_z": null,
-				 "tapSensitivity": 2,
-				 "tapEnabled": true,
-				 "pollFreq1": DEFAULT_POLLFREQ1,
-				 "pollFreq2": DEFAULT_POLLFREQ2,
-				 "pollFreq3": DEFAULT_POLLFREQ3,
-				 "pollFreq4": DEFAULT_POLLFREQ4,
-				 "pollFreq5": DEFAULT_POLLFREQ5,
-				 "blue": 1,
-				 "green": 1,
-				 "ledBlueEnabled": true,
-				 "ledGreenEnabled": true}; 
+    _savedData = null;
+    _rocky = null;
 
-		//server.save(savedData);
-		if (backup.len() != 0) {
-		    savedData = backup;
-		} else {
-		    local result = server.save(savedData);
-		    if (result != 0) server.error("Could not back up data");
-		}
-	}
-	
-	function postReading(reading) {
-		// Sends reading to Conctr
-		conctr.sendData(reading, function(error,response) {
-            server.log("Conct Data Sent");
-            if(error) {
-                server.error(error); 
+    constructor(rocky) {
+
+    	_rocky = rocky;
+
+        local initialData = server.load();
+        if (!("temperature" in initialData)) {
+
+            // Set the default values and save them to persistant storage
+            _savedData = {
+                reading = {
+                    "temperature": null,
+                    "humidity": null,
+                    "pressure": null,
+                    "battery": null,
+                    "acceleration_x": null,
+                    "acceleration_y": null,
+                    "acceleration_z": null
+                },
+
+                config = {
+
+                    "pollFreq1": DEFAULT_POLLFREQ1,
+                    "pollFreq2": DEFAULT_POLLFREQ2,
+                    "pollFreq3": DEFAULT_POLLFREQ3,
+                    "pollFreq4": DEFAULT_POLLFREQ4,
+                    "pollFreq5": DEFAULT_POLLFREQ5,
+                    "ledBlueEnabled": true,
+                    "ledGreenEnabled": true,
+                    "green": 0,
+                    "blue": 0,
+                    "tapSensitivity": 2,
+                    "tapEnabled": true
+                }
+            }
+            server.save(_savedData);
+
+        } else {
+
+            _savedData = initialData;
+
+        }
+
+		// Set up the agent API - just return standard web page HTML string
+		_rocky.get("/", function(context) {
+		    context.send(200, format(htmlString, http.agenturl(), http.agenturl()));
+		});
+
+		    // Request for data from /state endpoint
+		_rocky.get("/state", function(context) {
+		    context.send(200, _savedData);
+		});
+
+		// Config submission at the /config endpoint
+		_rocky.post("/config", function(context) {		 
+		    setConfig(context.req.body)
+		    context.send(200, "OK");
+		});
+
+		// The device is online and ready
+		device.on("ready", function(msg) {
+		    device.send("config", _savedData);
+		});
+
+		// Register the function to handle data messages from the device. Send Ready.
+		device.on("reading", postReading.bindenv(this));		
+
+    }
+
+
+    // Updates the in-memory and persistant data table
+    function setConfig(newconfig) {
+        if (typeof newconfig == "table") {
+            foreach (k, v in newconfig) {
+            	if (typeof v == "string") {
+            		if (v.tolower() == "true") v = true;
+            		else (v.tolower() == "false") v = false;
+            		else v = v.tointeger();
+            	}
+                _savedData.config[k] <- v;
+            }
+            return server.save(_savedData);
+        } else {
+            return false;
+        }
+    }
+
+
+    // Send readings to Conctr
+    function postReading(reading) {
+        conctr.sendData(reading, function(err, response) {
+            if (err) {
+                server.error("Conctr sendData: " + err);
             } else {
-                server.log(response.statusCode); 
+                server.log("Conctr data sent: " + response.statusCode);
             }
         }.bindenv(this));
-	}
+    }
 
 
 }
@@ -61,66 +125,9 @@ class environmentSensor {
 
 
 // START OF PROGRAM
-api <- Rocky();
+rocky <- Rocky();
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
-conctr <- Conctr(APP_ID, API_KEY, MODEL,api);
-backup <- server.load();
-
-
-envSens <- environmentSensor();
-
-
-// Set up the agent API
-api.get("/", function(context) {
-    // Root request: just return standard web page HTML string
-    context.send(200, format(htmlString, http.agenturl(), http.agenturl()));
-});
-
-api.get("/state", function(context) {
-    // Request for data from /state endpoint
-    context.send(200, { 
-    	temperature = envSens.savedData.temperature, 
-    	humidity = envSens.savedData.humidity, 
-    	pressure = envSens.savedData.pressure, 
-    	battery = envSens.savedData.battery, 
-    	tapSensitivity = envSens.savedData.tapSensitivity, 
-    	tapEnabled = envSens.savedData.tapEnabled, 
-    	pollFreq1 = envSens.savedData.pollFreq1,
-	    pollFreq2 = envSens.savedData.pollFreq2, 
-	    pollFreq3 = envSens.savedData.pollFreq3, 
-	    pollFreq4 = envSens.savedData.pollFreq4, 
-	    pollFreq5 = envSens.savedData.pollFreq5,  
-	    blue = envSens.savedData.blue, 
-	    green = envSens.savedData.green 
-	    ledBlueEnabled = envSens.savedData.ledBlueEnabled,
-	    ledGreenEnabled = envSens.savedData.ledGreenEnabled
-	    });
-});
-
-api.post("/config", function(context) {
-    // Config submission at the /config endpoint
-    local data = http.jsondecode(context.req.rawbody);    
-    envSens.savedData.tapSensitivity = data.tapSensitivity.tointeger();
-    envSens.savedData.tapEnabled = data.tapEnabled;
-    envSens.savedData.pollFreq1 = data.pollFreq1.tointeger();
-    envSens.savedData.pollFreq2 = data.pollFreq2.tointeger();
-    envSens.savedData.pollFreq3 = data.pollFreq3.tointeger();
-    envSens.savedData.pollFreq4 = data.pollFreq4.tointeger();
-    envSens.savedData.pollFreq5 = data.pollFreq5.tointeger();
-    envSens.savedData.blue = data.blue.tointeger();
-    envSens.savedData.green = data.green.tointeger();
-    envSens.savedData.ledBlueEnabled = data.ledBlueEnabled;
-    envSens.savedData.ledGreenEnabled = data.ledGreenEnabled;     
-    local result = server.save(envSens.savedData);
-    if (result != 0) server.error("Could not back up data");
-    context.send(200, "OK");
-});
-
-// Register the function to handle data messages from the device. Send Ready.
-device.on("reading", envSens.postReading);
-device.on("ready", function(msg) {    
-    device.send("config", envSens.savedData);
-});
-
+conctr <- Conctr(APP_ID, API_KEY, MODEL, api);
+envSensor <- environmentSensor(rocky);
 

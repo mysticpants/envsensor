@@ -1,126 +1,162 @@
 const htmlString = @"
-
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>Environment Data</title>
-        <link rel='stylesheet' href='https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css'>
-        <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-        <style>
-            .center { margin-left: auto; margin-right: auto; margin-bottom: auto; margin-top: auto; }
-        </style>
-    </head>
-    <body>
-        <div class='container'>
-            <h2 class='text-center'>User Settings</h2>
-            <br>
-            <div class='controls'>
-                <div class='update-button'>
-                    <form id='config-form'> 
+
+<head>
+    <title>Environment Data</title>
+    <link rel='stylesheet' href='https://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+    .center {
+        margin-left: auto;
+        margin-right: auto;
+        margin-bottom: auto;
+        margin-top: auto;
+    }
+    </style>
+</head>
+
+<body>
+    <div class='container'>
+        <h2 class='text-center'>User Settings</h2>
+        <br>
+        <div class='controls'>
+            <div class='update-button'>
+                <form id='config-form'>
+                    <div>
+                        <label>Tap Sensitivity(Gs):</label>&nbsp;
+                        <input id='tapSensitivity'></input>
+                        <input type='checkbox' id='tapEnabled' name='tapEnabled' value='tapEnabled'>Tap Enabled</input>
+                    </div>
+                    <div>
+                        <label>Poll Frequency 1:</label>&nbsp;
+                        <input id='pollFreq1'></input>
+                    </div>
+                    <div>
+                        <label>Poll Frequency 2:</label>&nbsp;
+                        <input id='pollFreq2'></input>
+                    </div>
+                    <div>
+                        <label>Poll Frequency 3:</label>&nbsp;
+                        <input id='pollFreq3'></input>
+                    </div>
+                    <div>
+                        <label>Poll Frequency 4:</label>&nbsp;
+                        <input id='pollFreq4'></input>
+                    </div>
+                    <div>
+                        <label>Poll Frequency 5:</label>&nbsp;
+                        <input id='pollFreq5'></input>
+                    </div>
+                    <div>LED Settings
                         <div>
-                            <label>Tap Sensitivity(Gs):</label>&nbsp;<input id='tapSensitivity'></input>
-                            <input type= 'checkbox' id ='tapEnabled' name='tapEnabled' value='tapEnabled'>Tap Enabled</input>
+                            <label>Blue LED Duration(0-5s):</label>&nbsp;
+                            <input id='blue'></input>
+                            <input type='checkbox' id='LED_Blue_Enabled' name='LED' value='LED_Blue_Enabled'>LED Blue Enabled</input>
                         </div>
                         <div>
-                            <label>Poll Frequency 1:</label>&nbsp;<input id='pollFreq1'></input>
+                            <label>Green LED Duration(0-5s):</label>&nbsp;
+                            <input id='green'></input>
+                            <input type='checkbox' id='LED_Green_Enabled' name='LED' value='LED_Green_Enabled'>LED Green Enabled</input>
                         </div>
-                        <div>
-                            <label>Poll Frequency 2:</label>&nbsp;<input id='pollFreq2'></input>
-                        </div>
-                        <div>
-                            <label>Poll Frequency 3:</label>&nbsp;<input id='pollFreq3'></input>
-                        </div>
-                        <div>
-                            <label>Poll Frequency 4:</label>&nbsp;<input id='pollFreq4'></input>
-                        </div>                                                
-                        <div>
-                            <label>Poll Frequency 5:</label>&nbsp;<input id='pollFreq5'></input>
-                        </div>
-                        <div>LED Settings
-                            <div>
-                                <label>Blue LED Duration(0-5s):</label>&nbsp;<input id='blue'></input>
-                                <input type= 'checkbox' id ='LED_Blue_Enabled' name='LED' value='LED_Blue_Enabled'>LED Blue Enabled</input>
-                            </div>
-                            <div>
-                                <label>Green LED Duration(0-5s):</label>&nbsp;<input id='green'></input>
-                                <input type= 'checkbox' id ='LED_Green_Enabled' name='LED' value='LED_Green_Enabled'>LED Green Enabled</input>
-                            </div>
-                        </div>
-                        <div>
-                            <button type='submit' id='update-button'>Update Config</button>
-                            <label id='submitResult'></label>
-                        </div>   
-                        
-                    </form>
-                </div>
-                
-            </div> <!-- controls -->
-            <br>
-            <small>From: %s</small>
-        </div>  <!-- container -->
-        <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
-        <script>
-            var agenturl = '%s';
+                    </div>
+                    <div>
+                        <button type='submit' id='update-button'>Update Config</button>
+                        <label id='submitResult'></label>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- controls -->
+        <br>
+        <small>From: %s</small>
+    </div>
+    <!-- container -->
+    <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
+    <script>
+    
+    var agenturl = '%s';
+    getState(updateReadout);
+    $('.update-button button').on('click', getStateInput);
+
+    function getStateInput(e) {
+        e.preventDefault();
+        var tapEnabled = document.getElementById('tapEnabled').value;
+        var tapSensitivity = document.getElementById('tapSensitivity').value;
+        var pollFreq1 = document.getElementById('pollFreq1').value;
+        var pollFreq2 = document.getElementById('pollFreq2').value;
+        var pollFreq3 = document.getElementById('pollFreq3').value;
+        var pollFreq4 = document.getElementById('pollFreq4').value;
+        var pollFreq5 = document.getElementById('pollFreq5').value;
+        var green = document.getElementById('green').value;
+        var blue = document.getElementById('blue').value;
+        var ledGreenEnabled = document.getElementById('LED_Green_Enabled').checked;
+        var ledBlueEnabled = document.getElementById('LED_Blue_Enabled').checked;
+        var config = {
+            'tapSensitivity': tapSensitivity,
+            'tapEnabled': tapEnabled,
+            'pollFreq1': pollFreq1,
+            'pollFreq2': pollFreq2,
+            'pollFreq3': pollFreq3,
+            'pollFreq4': pollFreq4,
+            'pollFreq5': pollFreq5,
+            'blue': blue,
+            'green': green,
+            'ledGreenEnabled': ledGreenEnabled,
+            'ledBlueEnabled': ledBlueEnabled
+        };
+        setConfig(config);
+        $('#name-form').trigger('reset');
+    }
+
+
+    function updateReadout(data) {
+        $('#tapSensitivity').val(data.tapSensitivity);
+        $('#tapEnabled').prop('checked', data.tapEnabled);
+        $('#pollFreq1').val(data.pollFreq1);
+        $('#pollFreq2').val(data.pollFreq2);
+        $('#pollFreq3').val(data.pollFreq3);
+        $('#pollFreq4').val(data.pollFreq4);
+        $('#pollFreq5').val(data.pollFreq5);
+        $('#green').val(data.green);
+        $('#blue').val(data.blue);
+        $('#LED_Blue_Enabled').prop('checked', data.ledBlueEnabled);
+        $('#LED_Green_Enabled').prop('checked', data.ledGreenEnabled);
+        setTimeout(function() {
             getState(updateReadout);
-            $('.update-button button').on('click', getStateInput);
-            function getStateInput(e){
-                e.preventDefault();
-                var tapEnabled = document.getElementById('tapEnabled').value;
-                var tapSensitivity = document.getElementById('tapSensitivity').value;
-                var pollFreq1 = document.getElementById('pollFreq1').value;
-                var pollFreq2 = document.getElementById('pollFreq2').value;
-                var pollFreq3 = document.getElementById('pollFreq3').value;
-                var pollFreq4 = document.getElementById('pollFreq4').value;
-                var pollFreq5 = document.getElementById('pollFreq5').value;
-                //var red = document.getElementById('red').value;
-                var green = document.getElementById('green').value;
-                var blue = document.getElementById('blue').value;
-                var ledGreenEnabled = document.getElementById('LED_Green_Enabled').checked;
-                var ledBlueEnabled = document.getElementById('LED_Blue_Enabled').checked;
-                var config = {'tapSensitivity': tapSensitivity, 'tapEnabled': tapEnabled, 'pollFreq1': pollFreq1, 'pollFreq2': pollFreq2, 'pollFreq3': pollFreq3, 'pollFreq4': pollFreq4,'pollFreq5': pollFreq5, 'blue': blue, 'green': green, 'ledGreenEnabled': ledGreenEnabled,'ledBlueEnabled': ledBlueEnabled};
-                setConfig(config);
-                $('#name-form').trigger('reset');
+        }, 120000);
+    }
+
+
+    function getState(callback) {
+        $.ajax({
+            url: agenturl + '/state',
+            type: 'GET',
+            success: function(response) {
+                if (callback && ('temperature' in response)) {
+                    callback(response);
+                }
             }
-            function updateReadout(data) {
-                $('#tapSensitivity').val(data.tapSensitivity);
-                $('#tapEnabled').prop('checked', data.tapEnabled);
-                $('#pollFreq1').val(data.pollFreq1);
-                $('#pollFreq2').val(data.pollFreq2);
-                $('#pollFreq3').val(data.pollFreq3);
-                $('#pollFreq4').val(data.pollFreq4);
-                $('#pollFreq5').val(data.pollFreq5);
-                $('#green').val(data.green);
-                $('#blue').val(data.blue);
-                $('#LED_Blue_Enabled').prop('checked', data.ledBlueEnabled);
-                $('#LED_Green_Enabled').prop('checked', data.ledGreenEnabled);        
-                setTimeout(function() {
-                    getState(updateReadout);
-                }, 120000);
+        });
+    }
+
+
+    function setConfig(config) {
+        $.ajax({
+            url: agenturl + '/config',
+            contentType: 'application/json; charset=utf-8',
+            dataType: 'json',
+            type: 'POST',
+            data: JSON.stringify(config),
+            success: function(response) {
+                console.log('success sending to agent');
+                $('#submitResult').text('Success');
             }
-            function getState(callback) {
-                $.ajax({
-                    url : agenturl + '/state',
-                    type: 'GET',
-                    success : function(response) {
-                        if (callback && ('temperature' in response)) {
-                            callback(response);
-                        }
-                    }
-                });
-            }
-            function setConfig(config) {
-                $.ajax({
-                    url : agenturl + '/config',
-                    type: 'POST',
-                    data: JSON.stringify(config),
-                    success : function(response) {
-                        console.log('success sending to agent');
-                        $('#submitResult').text('Success');
-                    }
-                });
-            }
-        </script>
-    </body>
+        });
+    }
+
+    </script>
+</body>
+
 </html>
 "
-;
