@@ -26,7 +26,7 @@ class environmentSensor {
     	_rocky = rocky;
 
         local initialData = server.load();
-        if (!("temperature" in initialData)) {
+        if (!("config" in initialData)) {
 
             // Set the default values and save them to persistant storage
             _savedData = {
@@ -66,23 +66,23 @@ class environmentSensor {
 		// Set up the agent API - just return standard web page HTML string
 		_rocky.get("/", function(context) {
 		    context.send(200, format(htmlString, http.agenturl(), http.agenturl()));
-		});
+		}.bindenv(this));
 
 		    // Request for data from /state endpoint
 		_rocky.get("/state", function(context) {
 		    context.send(200, _savedData);
-		});
+		}.bindenv(this));
 
 		// Config submission at the /config endpoint
 		_rocky.post("/config", function(context) {		 
 		    setConfig(context.req.body)
 		    context.send(200, "OK");
-		});
+		}.bindenv(this));
 
 		// The device is online and ready
 		device.on("ready", function(msg) {
 		    device.send("config", _savedData);
-		});
+		}.bindenv(this));
 
 		// Register the function to handle data messages from the device. Send Ready.
 		device.on("reading", postReading.bindenv(this));		
@@ -95,9 +95,13 @@ class environmentSensor {
         if (typeof newconfig == "table") {
             foreach (k, v in newconfig) {
             	if (typeof v == "string") {
-            		if (v.tolower() == "true") v = true;
-            		else (v.tolower() == "false") v = false;
-            		else v = v.tointeger();
+            		if (v.tolower() == "true") {
+            			v = true;
+            		} else if (v.tolower() == "false") {
+            			v = false;
+            		} else {
+            			v = v.tointeger();
+            		}
             	}
                 _savedData.config[k] <- v;
             }
@@ -128,6 +132,6 @@ class environmentSensor {
 rocky <- Rocky();
 pp <- PrettyPrinter(null, false);
 print <- pp.print.bindenv(pp);
-conctr <- Conctr(APP_ID, API_KEY, MODEL, api);
+conctr <- Conctr(APP_ID, API_KEY, MODEL, rocky);
 envSensor <- environmentSensor(rocky);
 

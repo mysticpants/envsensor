@@ -7,6 +7,7 @@
 #require "PrettyPrinter.class.nut:1.0.1"
 
 // Import Libraries
+#require "ConnectionManager.class.nut:1.0.2"
 #require "WS2812.class.nut:2.0.2"
 #require "HTS221.class.nut:1.0.0"
 #require "LPS22HB.class.nut:1.0.0"
@@ -20,7 +21,7 @@ const LIS3DH_ADDR = 0x32;
 const POLL_TIME = 900;
 const VOLTAGE_VARIATION = 0.1;
 
-enum DeviceType = {
+enum DeviceType {
     environmentSensor,
     impExplorer
 }
@@ -147,11 +148,16 @@ class environmentSensor {
         server.log("Ambient Light: " + reading.light);
 
         // Read the battery voltage
-        reading.battery = getBattVoltage();
-        server.log(reading.battery);
+        if (deviceType == DeviceType.environmentSensor) {
+            reading.battery = getBattVoltage();
+            server.log(reading.battery);
+            // Determine how long to sleep for
+            _sleepTime = calcSleepTime(reading.battery);
+        } else {
+            reading.battery = 0;
+            _sleepTime = DEFAULT_POLLFREQ1;
+        }
 
-        // Determine how long to sleep for
-        _sleepTime = calcSleepTime(reading.battery);
 
         // Toggle the LEDs
         if (deviceType == DeviceType.environmentSensor) {
@@ -208,7 +214,12 @@ class environmentSensor {
     // 
     function decrementProcesses() {
         if (--_processesRunning <= 0) {
-            postReadings();
+            if (cm.isConnected()) {
+                postReadings();
+            } else {
+                cm.onNextConnect(postReadings.bindenv(this)).connect();
+            }
+
         }
     }
 
@@ -260,6 +271,9 @@ class environmentSensor {
 
 
 // Globals
+cm <- ConnectionManager({ "blinkupBehavior": ConnectionManager.BLINK_ALWAYS, "stayConnected": false });
+imp.setsendbuffersize(8096);
+
 if ("pinW" in hardware) {
     deviceType <- DeviceType.environmentSensor;
 } else {

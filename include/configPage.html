@@ -93,15 +93,15 @@ const htmlString = @"
             var ledGreenEnabled = document.getElementById('ledGreenEnabled').checked;
             var ledBlueEnabled = document.getElementById('ledBlueEnabled').checked;
             var config = {
-                'tapSensitivity': tapSensitivity,
-                'tapEnabled': tapEnabled,
-                'pollFreq1': pollFreq1,
-                'pollFreq2': pollFreq2,
-                'pollFreq3': pollFreq3,
-                'pollFreq4': pollFreq4,
-                'pollFreq5': pollFreq5,
-                'blue': blue,
-                'green': green,
+                'tapSensitivity': parseInt(tapSensitivity),
+                'tapEnabled': tapEnabled == 'tapEnabled',
+                'pollFreq1': parseInt(pollFreq1),
+                'pollFreq2': parseInt(pollFreq2),
+                'pollFreq3': parseInt(pollFreq3),
+                'pollFreq4': parseInt(pollFreq4),
+                'pollFreq5': parseInt(pollFreq5),
+                'blue': parseInt(blue),
+                'green': parseInt(green),
                 'ledGreenEnabled': ledGreenEnabled,
                 'ledBlueEnabled': ledBlueEnabled
             };
@@ -133,8 +133,9 @@ const htmlString = @"
                 url: agenturl + '/state',
                 type: 'GET',
                 success: function(response) {
-                    if (callback && ('temperature' in response)) {
-                        callback(response);
+                    if (callback && ('config' in response)) {
+                        callback(response.config);
+                        $('#submitResult').text('Success');
                     }
                 }
             });
