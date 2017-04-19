@@ -1,2 +1,2 @@
-.out
+*.out*
 .build_api_key.json

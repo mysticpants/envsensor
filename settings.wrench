@@ -4,6 +4,6 @@
 	"agent_file_in":"agent.nut",
 	"device_file_in":"device.nut",
 	"api_file":".build_api_key.json",
-	"model_key":"zrTICm3Pa-_m",
+	"model_key":"17lUSrky1NXy",
 	"dirs":["libs"]
 }
