@@ -21,6 +21,7 @@ const LIS3DH_ADDR = 0x32;
 const POLL_TIME = 900;
 const VOLTAGE_VARIATION = 0.1;
 const NO_WIFI_SLEEP_DURATION = 60;
+const DEBUG = true;
 
 enum DeviceType {
     environmentSensor,
@@ -84,7 +85,7 @@ class environmentSensor {
     // @returns none
     // 
     function setConfig(newconfig) {
-        // server.log("Setting Configs");
+        if (DEBUG) server.log("Setting Configs");
         if (typeof newconfig == "table") {
 
             foreach (k, v in newconfig) {
@@ -131,7 +132,7 @@ class environmentSensor {
                 // This temp sensor has 0.5 accuracy so it is used for 0-40 degrees.
                 reading.temperature = result.temperature;
                 reading.humidity = result.humidity;
-                server.log(format("Current Humidity: %0.2f %s, Current Temperature: %0.2f °C", result.humidity, "%", result.temperature));
+                if (DEBUG) server.log(format("Current Humidity: %0.2f %s, Current Temperature: %0.2f °C", result.humidity, "%", result.temperature));
             }
 
             decrementProcesses();
@@ -141,14 +142,14 @@ class environmentSensor {
         _processesRunning++;
         pressureSensor.read(function(result) {
             if ("err" in result) {
-                server.log("pressureSensor: " + result.err);
+                if (DEBUG) server.log("pressureSensor: " + result.err);
             } else {
                 // Note the temp sensor in the LPS22HB is only accurate to +-1.5 degrees. 
                 // But it has an range of up to 65 degrees.
                 // Hence it is used if temp is greater than 40.
                 if (result.temperature > 40) reading.temperature = result.temperature;
                 reading.pressure = result.pressure;
-                server.log(format("Current Pressure: %0.2f hPa, Current Temperature: %0.2f °C", result.pressure, result.temperature));
+                if (DEBUG) server.log(format("Current Pressure: %0.2f hPa, Current Temperature: %0.2f °C", result.pressure, result.temperature));
             }
 
             decrementProcesses();
@@ -156,12 +157,12 @@ class environmentSensor {
 
         // Read the light level
         reading.light = hardware.lightlevel();
-        server.log("Ambient Light: " + reading.light);
+        if (DEBUG) server.log("Ambient Light: " + reading.light);
 
         // Read the battery voltage
         if (deviceType == DeviceType.environmentSensor) {
             reading.battery = getBattVoltage();
-            server.log(reading.battery);
+            if (DEBUG) server.log(reading.battery);
             // Determine how long to sleep for
             _sleepTime = calcSleepTime(reading.battery);
         } else {
@@ -255,21 +256,21 @@ class environmentSensor {
         if (battVoltage < 0.8) {
             // Poll only once every two days
             _sleepTime = config.pollFreq1;
-            server.log("Battery Voltage Critical: " + battVoltage);
+            if (DEBUG) server.log("Battery Voltage Critical: " + battVoltage);
         } else if (battVoltage < 1.5) {
             // Poll only once every day
             _sleepTime = config.pollFreq2;
-            server.log("Battery Voltage Low: " + battVoltage);
+            if (DEBUG) server.log("Battery Voltage Low: " + battVoltage);
         } else if (battVoltage < 2.0) {
             // Poll only once every 5 hours
             _sleepTime = config.pollFreq3;
-            server.log("Battery Voltage Medium: " + battVoltage);
+            if (DEBUG) server.log("Battery Voltage Medium: " + battVoltage);
         } else if (battVoltage < 2.5) {
             // Poll only once an hour
             _sleepTime = config.pollFreq4;
-            server.log("Battery Voltage High: " + battVoltage);
+            if (DEBUG) server.log("Battery Voltage High: " + battVoltage);
         } else {
-            server.log("Battery Voltage Full: " + battVoltage);
+            if (DEBUG) server.log("Battery Voltage Full: " + battVoltage);
             // Poll every 15 min
             _sleepTime = config.pollFreq5;
         }
