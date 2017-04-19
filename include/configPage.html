@@ -52,12 +52,12 @@ const htmlString = @"
                         <div>
                             <label>Blue LED Duration(0-5s):</label>&nbsp;
                             <input id='blue'></input>
-                            <input type='checkbox' id='LED_Blue_Enabled' name='LED' value='LED_Blue_Enabled'>LED Blue Enabled</input>
+                            <input type='checkbox' id='ledBlueEnabled' name='LED' value='ledBlueEnabled'>LED Blue Enabled</input>
                         </div>
                         <div>
                             <label>Green LED Duration(0-5s):</label>&nbsp;
                             <input id='green'></input>
-                            <input type='checkbox' id='LED_Green_Enabled' name='LED' value='LED_Green_Enabled'>LED Green Enabled</input>
+                            <input type='checkbox' id='ledGreenEnabled' name='LED' value='ledGreenEnabled'>LED Green Enabled</input>
                         </div>
                     </div>
                     <div>
@@ -74,86 +74,86 @@ const htmlString = @"
     <!-- container -->
     <script src='https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js'></script>
     <script>
-    
-    var agenturl = '%s';
-    getState(updateReadout);
-    $('.update-button button').on('click', getStateInput);
+        
+        var agenturl = '%s';
+        getState(updateReadout);
+        $('.update-button button').on('click', getStateInput);
 
-    function getStateInput(e) {
-        e.preventDefault();
-        var tapEnabled = document.getElementById('tapEnabled').value;
-        var tapSensitivity = document.getElementById('tapSensitivity').value;
-        var pollFreq1 = document.getElementById('pollFreq1').value;
-        var pollFreq2 = document.getElementById('pollFreq2').value;
-        var pollFreq3 = document.getElementById('pollFreq3').value;
-        var pollFreq4 = document.getElementById('pollFreq4').value;
-        var pollFreq5 = document.getElementById('pollFreq5').value;
-        var green = document.getElementById('green').value;
-        var blue = document.getElementById('blue').value;
-        var ledGreenEnabled = document.getElementById('LED_Green_Enabled').checked;
-        var ledBlueEnabled = document.getElementById('LED_Blue_Enabled').checked;
-        var config = {
-            'tapSensitivity': tapSensitivity,
-            'tapEnabled': tapEnabled,
-            'pollFreq1': pollFreq1,
-            'pollFreq2': pollFreq2,
-            'pollFreq3': pollFreq3,
-            'pollFreq4': pollFreq4,
-            'pollFreq5': pollFreq5,
-            'blue': blue,
-            'green': green,
-            'ledGreenEnabled': ledGreenEnabled,
-            'ledBlueEnabled': ledBlueEnabled
-        };
-        setConfig(config);
-        $('#name-form').trigger('reset');
-    }
-
-
-    function updateReadout(data) {
-        $('#tapSensitivity').val(data.tapSensitivity);
-        $('#tapEnabled').prop('checked', data.tapEnabled);
-        $('#pollFreq1').val(data.pollFreq1);
-        $('#pollFreq2').val(data.pollFreq2);
-        $('#pollFreq3').val(data.pollFreq3);
-        $('#pollFreq4').val(data.pollFreq4);
-        $('#pollFreq5').val(data.pollFreq5);
-        $('#green').val(data.green);
-        $('#blue').val(data.blue);
-        $('#LED_Blue_Enabled').prop('checked', data.ledBlueEnabled);
-        $('#LED_Green_Enabled').prop('checked', data.ledGreenEnabled);
-        setTimeout(function() {
-            getState(updateReadout);
-        }, 120000);
-    }
+        function getStateInput(e) {
+            e.preventDefault();
+            var tapEnabled = document.getElementById('tapEnabled').value;
+            var tapSensitivity = document.getElementById('tapSensitivity').value;
+            var pollFreq1 = document.getElementById('pollFreq1').value;
+            var pollFreq2 = document.getElementById('pollFreq2').value;
+            var pollFreq3 = document.getElementById('pollFreq3').value;
+            var pollFreq4 = document.getElementById('pollFreq4').value;
+            var pollFreq5 = document.getElementById('pollFreq5').value;
+            var green = document.getElementById('green').value;
+            var blue = document.getElementById('blue').value;
+            var ledGreenEnabled = document.getElementById('ledGreenEnabled').checked;
+            var ledBlueEnabled = document.getElementById('ledBlueEnabled').checked;
+            var config = {
+                'tapSensitivity': tapSensitivity,
+                'tapEnabled': tapEnabled,
+                'pollFreq1': pollFreq1,
+                'pollFreq2': pollFreq2,
+                'pollFreq3': pollFreq3,
+                'pollFreq4': pollFreq4,
+                'pollFreq5': pollFreq5,
+                'blue': blue,
+                'green': green,
+                'ledGreenEnabled': ledGreenEnabled,
+                'ledBlueEnabled': ledBlueEnabled
+            };
+            setConfig(config);
+            $('#name-form').trigger('reset');
+        }
 
 
-    function getState(callback) {
-        $.ajax({
-            url: agenturl + '/state',
-            type: 'GET',
-            success: function(response) {
-                if (callback && ('temperature' in response)) {
-                    callback(response);
+        function updateReadout(data) {
+            $('#tapSensitivity').val(data.tapSensitivity);
+            $('#tapEnabled').prop('checked', data.tapEnabled);
+            $('#pollFreq1').val(data.pollFreq1);
+            $('#pollFreq2').val(data.pollFreq2);
+            $('#pollFreq3').val(data.pollFreq3);
+            $('#pollFreq4').val(data.pollFreq4);
+            $('#pollFreq5').val(data.pollFreq5);
+            $('#green').val(data.green);
+            $('#blue').val(data.blue);
+            $('#ledBlueEnabled').prop('checked', data.ledBlueEnabled);
+            $('#ledGreenEnabled').prop('checked', data.ledGreenEnabled);
+            setTimeout(function() {
+                getState(updateReadout);
+            }, 120000);
+        }
+
+
+        function getState(callback) {
+            $.ajax({
+                url: agenturl + '/state',
+                type: 'GET',
+                success: function(response) {
+                    if (callback && ('temperature' in response)) {
+                        callback(response);
+                    }
                 }
-            }
-        });
-    }
+            });
+        }
 
 
-    function setConfig(config) {
-        $.ajax({
-            url: agenturl + '/config',
-            contentType: 'application/json; charset=utf-8',
-            dataType: 'json',
-            type: 'POST',
-            data: JSON.stringify(config),
-            success: function(response) {
-                console.log('success sending to agent');
-                $('#submitResult').text('Success');
-            }
-        });
-    }
+        function setConfig(config) {
+            $.ajax({
+                url: agenturl + '/config',
+                contentType: 'application/json; charset=utf-8',
+                dataType: 'json',
+                type: 'POST',
+                data: JSON.stringify(config),
+                success: function(response) {
+                    console.log('success sending to agent');
+                    $('#submitResult').text('Success');
+                }
+            });
+        }
 
     </script>
 </body>
