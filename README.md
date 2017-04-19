@@ -3,7 +3,7 @@
 ### Sensors ###
 The I2C sensors are all on i2cAB.
 Use this setting for i2C clock speed `hardware.i2cAB.configure(CLOCK_SPEED_400_KHZ);`
-
+By default the tempHumid Sensor takes the max number of samples, to average. So 256 for temp and 512 for humidity. 
 
 ### Sleep ###
 The imp goes into deep sleep when after it takes some sensor readings. The wake pin is pinW. The accelerometer is setup to generate an interrupt when it recognizes a doubleClick.

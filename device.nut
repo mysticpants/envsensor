@@ -20,6 +20,7 @@ const LPS22HB_ADDR = 0xB8;
 const LIS3DH_ADDR = 0x32;
 const POLL_TIME = 900;
 const VOLTAGE_VARIATION = 0.1;
+const NO_WIFI_SLEEP_DURATION = 60;
 
 enum DeviceType {
     environmentSensor,
@@ -83,7 +84,7 @@ class environmentSensor {
     // @returns none
     // 
     function setConfig(newconfig) {
-        server.log("Setting Configs");
+        // server.log("Setting Configs");
         if (typeof newconfig == "table") {
 
             foreach (k, v in newconfig) {
@@ -116,7 +117,7 @@ class environmentSensor {
             reading.acceleration_x = val.x;
             reading.acceleration_y = val.y;
             reading.acceleration_z = val.z;
-            server.log(format("Acceleration (G): (%0.2f, %0.2f, %0.2f)", val.x, val.y, val.z));
+            // server.log(format("Acceleration (G): (%0.2f, %0.2f, %0.2f)", val.x, val.y, val.z));
 
             decrementProcesses();
         }.bindenv(this));
@@ -125,7 +126,7 @@ class environmentSensor {
         _processesRunning++;
         tempHumid.read(function(result) {
             if ("error" in result) {
-                server.error("tempHumid: " + result.error);
+                server.log("tempHumid: " + result.error);
             } else {
                 // This temp sensor has 0.5 accuracy so it is used for 0-40 degrees.
                 reading.temperature = result.temperature;
@@ -140,7 +141,7 @@ class environmentSensor {
         _processesRunning++;
         pressureSensor.read(function(result) {
             if ("err" in result) {
-                server.error("pressureSensor: " + result.err);
+                server.log("pressureSensor: " + result.err);
             } else {
                 // Note the temp sensor in the LPS22HB is only accurate to +-1.5 degrees. 
                 // But it has an range of up to 65 degrees.
@@ -165,7 +166,7 @@ class environmentSensor {
             _sleepTime = calcSleepTime(reading.battery);
         } else {
             reading.battery = 0;
-            _sleepTime = DEFAULT_POLLFREQ1;
+            _sleepTime = DEFAULT_POLLFREQ5;
         }
 
 
@@ -204,7 +205,7 @@ class environmentSensor {
         agent.send("reading", reading);
         wakepin.configure(DIGITAL_IN_WAKEUP);
         server.flush(10);
-        server.sleepfor(_sleepTime);
+        server.sleepfor(NO_WIFI_SLEEP_DURATION);
     }
 
 
@@ -235,9 +236,9 @@ class environmentSensor {
     function decrementProcesses() {
         if (--_processesRunning <= 0) {
             if (cm.isConnected()) {
-                postReadings();
-                // TODO Handle not connected to wifi
+                postReadings();   
             } else {
+                // TODO Handle not connected to wifi
                 cm.onNextConnect(postReadings.bindenv(this)).connect();
             }
 

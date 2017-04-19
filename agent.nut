@@ -68,7 +68,7 @@ class environmentSensor {
 		    context.send(200, format(htmlString, http.agenturl(), http.agenturl()));
 		}.bindenv(this));
 
-		    // Request for data from /state endpoint
+		// Request for data from /state endpoint
 		_rocky.get("/state", function(context) {
 		    context.send(200, _savedData);
 		}.bindenv(this));
