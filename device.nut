@@ -21,7 +21,7 @@ const LIS3DH_ADDR = 0x32;
 const POLL_TIME = 900;
 const VOLTAGE_VARIATION = 0.1;
 const NO_WIFI_SLEEP_DURATION = 60;
-const DEBUG = true;
+const DEBUG = 1;
 
 enum DeviceType {
     environmentSensor,
